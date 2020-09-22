@@ -134,7 +134,7 @@ function onexecuteLinesSplit(properties: SingleRecord, configuration: SingleReco
                         "assignedTo": x.assignedTo, 
                         "subject": x.subject, 
                         "description": x.description, 
-                        "dueDate": x.dueDate }}));
+                        "dueDate": Date.parse(x.dueDate) }}));
 
                 resolve();
             } catch (e) {
