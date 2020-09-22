@@ -1,9 +1,9 @@
 import '@k2oss/k2-broker-core';
 
 metadata = {
-    systemName: "csvreader",
-    displayName: "CSV Reader Broker",
-    description: "A broker that reads a CSV file and returns each line as a list.",
+    systemName: "TaskManagerCSVReader",
+    displayName: "Task Manager CSV Reader Broker",
+    description: "A broker that reads a CSV file and returns the info for use in the Task Manager Application.",
     configuration: {
         "FirstRowIsHeader": {
             displayName: "First Row Is Header",
@@ -14,32 +14,62 @@ metadata = {
             displayName: "Line Split Character",
             type: "string",
             value: "newline"
+        },
+        "FieldSplitChar": {
+            displayName: "Field Split Character",
+            type: "string",
+            value: ";"
         }
     }
 };
 
+//INTERNAL REFERENCE;CATEGORY;PRIORITY;ASSIGNED TO;SUBJECT;DESCRIPTION;TASK DUE DATE
 ondescribe = async function({configuration}): Promise<void> {
     postSchema({
         objects: {
-            "lines": {
-                displayName: "Lines",
-                description: "Describes all lines in a CSV file",
+            "tasks": {
+                displayName: "Tasks",
+                description: "Describes all tasks in a CSV file",
                 properties: {
                     "fileContent": {
                         displayName: "File Content",
                         type: "string"
                     },
-                    "line": {
-                        displayName: "Line",
+                    "reference": {
+                        displayName: "Internal Reference",
                         type: "string"
+                    },
+                    "category": {
+                        displayName: "Category",
+                        type: "string"
+                    },
+                    "priority": {
+                        displayName: "Priority",
+                        type: "string"
+                    },
+                    "assignedTo": {
+                        displayName: "Assigned To",
+                        type: "string"
+                    },
+                    "subject": {
+                        displayName: "Subject",
+                        type: "string"
+                    },
+                    "description": {
+                        displayName: "Description",
+                        type: "string"
+                    },
+                    "dueDate": {
+                        displayName: "Task Due Date",
+                        type: "dateTime"
                     }
                 },
                 methods: {
-                    "getLines": {
-                        displayName: "Get Lines",
+                    "getTasks": {
+                        displayName: "Get Tasks",
                         type: "list",
                         inputs: [ "fileContent" ],
-                        outputs: [ "line" ]
+                        outputs: [ "reference", "category", "priority", "assignedTo", "subject", "description", "dueDate" ]
                     }
                 }
             }
@@ -50,7 +80,7 @@ ondescribe = async function({configuration}): Promise<void> {
 onexecute = async function({objectName, methodName, parameters, properties, configuration, schema}): Promise<void> {
     switch (objectName)
     {
-        case "lines": await onexecuteSplit(methodName, properties, configuration); break;
+        case "tasks": await onexecuteSplit(methodName, properties, configuration); break;
         default: throw new Error("The object " + objectName + " is not supported.");
     }
 }
@@ -58,7 +88,7 @@ onexecute = async function({objectName, methodName, parameters, properties, conf
 async function onexecuteSplit(methodName: string, properties: SingleRecord, configuration: SingleRecord): Promise<void> {
     switch (methodName)
     {
-        case "getLines": await onexecuteLinesSplit(properties, configuration); break;
+        case "getTasks": await onexecuteLinesSplit(properties, configuration); break;
         default: throw new Error("The method " + methodName + " is not supported.");
     }
 }
@@ -84,12 +114,27 @@ function onexecuteLinesSplit(properties: SingleRecord, configuration: SingleReco
                 var startIndex = configuration["FirstRowIsHeader"] ? 1 : 0;
 
                 for (let index = startIndex; index < lines.length; index++) {
-                    lineObj.push({ line: lines[index] });                    
+                    var line = lines[index].split(configuration["FieldSplitChar"].toString());
+
+                    lineObj.push({ 
+                        reference: line[0], 
+                        category: line[1], 
+                        priority: line[2],
+                        assignedTo: line[3], 
+                        subject: line[4], 
+                        description: line[5], 
+                        dueDate: line[6] });                    
                 }
 
                 postResult(lineObj.map(x => {
                     return {
-                        "line": x.line }}));
+                        "reference": x.reference, 
+                        "category": x.category, 
+                        "priority": x.priority,
+                        "assignedTo": x.assignedTo, 
+                        "subject": x.subject, 
+                        "description": x.description, 
+                        "dueDate": x.dueDate }}));
 
                 resolve();
             } catch (e) {
